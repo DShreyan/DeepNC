@@ -1,15 +1,23 @@
 import numpy as np
 import pandas as pd
-import sys, os
-from random import shuffle
+import sys
+import os
 import torch
 import torch.nn as nn
 from models.gen import GEN
 from models.gcn import GCNNet
 from utils import *
+from torch.utils.data import DataLoader
 from torch_geometric.explain import Explainer, GNNExplainer, ModelConfig
 
-# training function at each epoch
+# Constants and Hyperparameters
+LOG_INTERVAL = 20
+NUM_EPOCHS = 1
+TRAIN_BATCH_SIZE = 256
+TEST_BATCH_SIZE = 256
+LR = 0.0005
+
+# Training function at each epoch
 def train(model, device, train_loader, optimizer, epoch):
     print('Training on {} samples...'.format(len(train_loader.dataset)))
     model.train()
@@ -40,7 +48,6 @@ def predicting(model, device, loader):
             total_labels = torch.cat((total_labels, data.y.view(-1, 1).cpu()), 0)
     return total_labels.numpy().flatten(), total_preds.numpy().flatten()
 
-
 datasets = [['davis', 'kiba', 'allergy'][int(sys.argv[1])]]
 modeling = [GEN, GCNNet][int(sys.argv[2])]
 model_st = modeling.__name__
@@ -49,12 +56,6 @@ cuda_name = "cuda:0"
 if len(sys.argv) > 3:
     cuda_name = ["cuda:0", "cuda:1"][int(sys.argv[3])]
 print('cuda_name:', cuda_name)
-
-TRAIN_BATCH_SIZE = 256
-TEST_BATCH_SIZE = 256
-LR = 0.0005
-LOG_INTERVAL = 20
-NUM_EPOCHS = 1
 
 print('Learning rate: ', LR)
 print('Epochs: ', NUM_EPOCHS)
@@ -117,22 +118,3 @@ for dataset in datasets:
                 print('rmse improved at epoch ', best_epoch, '; best_test_mse,best_test_ci:', best_test_mse, best_test_ci, model_st, dataset)
             else:
                 print(ret[1], 'No improvement since epoch ', best_epoch, '; best_test_mse,best_test_ci:', best_test_mse, best_test_ci, model_st, dataset)
-
-    model_config = ModelConfig(
-        mode='regression',
-        task_level='graph',
-        return_type='raw',
-    )
-
-    # explainer = Explainer(
-    #     model=model,
-    #     algorithm=GNNExplainer(epochs=1),
-    #     explanation_type='model',
-    #     node_mask_type='object',
-    #     model_config=model_config,
-    # )
-
-    # explanation = explainer(
-    # x=test_data.x,
-    # # edge_index=test_data.edge_index,
-    # )

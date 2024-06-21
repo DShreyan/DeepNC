@@ -1,9 +1,10 @@
 import numpy as np
 import pandas as pd
-import sys, os
-from random import shuffle
+import sys
+import os
 import torch
 import torch.nn as nn
+from torch.utils.data import DataLoader
 from models.gen import GEN
 from models.gcn import GCNNet
 from utils import *
@@ -41,6 +42,14 @@ def predicting(model, device, loader):
             total_labels = torch.cat((total_labels, data.y.view(-1, 1).cpu()), 0)
     return total_labels.numpy().flatten(), total_preds.numpy().flatten()
 
+# Constants and Hyperparameters
+LOG_INTERVAL = 20
+NUM_EPOCHS = 2
+TRAIN_BATCH_SIZE = 256
+TEST_BATCH_SIZE = 256
+LR = 0.0005
+
+# Main program
 datasets = [['davis', 'kiba', 'allergy'][int(sys.argv[1])]]
 modeling = [GEN, GCNNet][int(sys.argv[2])]
 model_st = modeling.__name__
@@ -50,16 +59,9 @@ if len(sys.argv) > 3:
     cuda_name = "cuda:" + str(int(sys.argv[3]))
 print('cuda_name:', cuda_name)
 
-TRAIN_BATCH_SIZE = 256
-TEST_BATCH_SIZE = 256
-LR = 0.0005
-LOG_INTERVAL = 20
-NUM_EPOCHS = 2
-
 print('Learning rate: ', LR)
 print('Epochs: ', NUM_EPOCHS)
 
-# Main program: iterate over different datasets
 for dataset in datasets:
     print('\nrunning on ', model_st + '_' + dataset)
     processed_data_file_train = 'data/processed/' + dataset + '_train.pt'

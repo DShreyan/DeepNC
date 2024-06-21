@@ -29,3 +29,7 @@
 - x=[0,1,2]: 0 for Davis dataset, 1 for Kiba dataset, 2 for Allergy dataset.
 - y=[0,1]: 0 for GEN, 1 for GCN
 - z is the index of CUDA you use (choose 0 if you use 'cuda:0')
+
+**3. Predict the results using model**
+
+> python predict.py

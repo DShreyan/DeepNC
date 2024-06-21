@@ -1,12 +1,17 @@
 import pandas as pd
 import numpy as np
 import os
-import json,pickle
+import json
+import pickle
 from collections import OrderedDict
 from rdkit import Chem
 from rdkit.Chem.rdmolfiles import MolFromSmiles, MolToSmiles
 import networkx as nx
 from utils import *
+
+# Constants
+max_seq_len = 1000
+seq_voc = "ABCDEFGHIKLMNOPQRSTUVWXYZ"
 
 def atom_features(atom):
     return np.array(one_of_k_encoding_unk(atom.GetSymbol(), ['C', 'N', 'O', 'S', 'F', 'Si', 'P', 'Cl', 'Br', 'Mg', 'Na','Ca', 'Fe', 'As', 'Al', 'I', 'B', 'V', 'K', 'Tl', 'Yb','Sb', 'Sn', 'Ag', 'Pd', 'Co', 'Se', 'Ti', 'Zn', 'H','Li', 'Ge', 'Cu', 'Au', 'Ni', 'Cd', 'In', 'Mn', 'Zr','Cr', 'Pt', 'Hg', 'Pb', 'Unknown']) +
@@ -52,8 +57,7 @@ def seq_cat(prot):
         x[i] = seq_dict[ch]
     return x  
 
-
-# from DeepDTA data
+# Data Preparation
 all_prots = []
 datasets = ['kiba','davis']
 for dataset in datasets:
@@ -95,13 +99,12 @@ for dataset in datasets:
     print('test_fold:', len(valid_fold))
     print('len(set(drugs)),len(set(prots)):', len(set(drugs)),len(set(prots)))
     all_prots += list(set(prots))
-    
-    
-seq_voc = "ABCDEFGHIKLMNOPQRSTUVWXYZ"
-seq_dict = {v:(i+1) for i,v in enumerate(seq_voc)}
-seq_dict_len = len(seq_dict)
-max_seq_len = 1000
 
+# Sequence Encoding
+seq_dict = {v: (i + 1) for i, v in enumerate(seq_voc)}
+seq_dict_len = len(seq_dict)
+
+# Feature Extraction
 compound_iso_smiles = []
 for data_name in ['davis', 'kiba', 'allergy']:
     options = ['train', 'test']
@@ -121,7 +124,7 @@ with open('features.txt', 'w') as file:
         file.write(f"Feature for smile '{smile}': {b}\n")  # Write the feature to the file
         smile_graph[smile] = (a, b, c)  # Storing the smile graph
 
-# convert to PyTorch data format
+# Data Conversion to PyTorch Geometric Format
 datasets = ['davis', 'kiba', 'allergy']
 for dataset in datasets:
     processed_data_file_train = 'data/processed/' + dataset + '_train.pt'
@@ -143,16 +146,4 @@ for dataset in datasets:
         test_data = TestbedDataset(root='data', dataset=dataset+'_test', xd=test_drugs, xt=test_prots, y=test_Y,smile_graph=smile_graph)
         print(processed_data_file_train, ' and ', processed_data_file_test, ' have been created')        
     else:
-        print(processed_data_file_train, ' and ', processed_data_file_test, ' have already existed')        
-
-# compound_iso_smiles = []
-# df = pd.read_csv('data/davis_test.csv')
-# compound_iso_smiles += list( df['compound_iso_smiles'] )
-# compound_iso_smiles = set(compound_iso_smiles)
-# compound_iso_smiles = list(compound_iso_smiles)
-# features = []
-# for smile in compound_iso_smiles:
-#     a, b, c = smile_to_graph(smile)
-#     features.append(b)
-
-# print(features)
+        print(processed_data_file_train, ' and ', processed_data_file_test, ' have already existed')
